@@ -1,6 +1,7 @@
 'use strict';
 
 const { google } = require('googleapis');
+const schedule = require('node-schedule');
 const async = require('async');
 const config = require('./config/config');
 const privateKey = require(config.auth.key);
@@ -13,6 +14,8 @@ const GCE_SCOPES = [
 const ipLookup = new Map();
 let jwtClient;
 let Logger;
+let updateListJob = null;
+let previousUpdateCron = '';
 
 /**
  *
@@ -20,14 +23,13 @@ let Logger;
  * @param options
  * @param cb
  */
-function doLookup(entities, options, cb) {
+async function doLookup(entities, options, cb) {
   Logger.debug({ entities: entities }, 'doLookup');
   let lookupResults = [];
-
+  scheduleUpdate(options);
   // check if IP exists in ipLookup cache
-  async.each(
-    entities,
-    async (entity) => {
+  try {
+    await async.each(entities, async (entity) => {
       if (ipLookup.has(entity.value)) {
         const { instanceId, zone } = ipLookup.get(entity.value);
         const instance = await getInstance(instanceId, zone);
@@ -39,21 +41,23 @@ function doLookup(entities, options, cb) {
           }
         });
       }
-    },
-    (err) => {
-      if (err) {
-        err = errorToPojo(err);
-        Logger.error(err, 'Error');
-      }
-      cb(err, lookupResults);
-    }
-  );
+    });
+  } catch (err) {
+    err = errorToPojo(err);
+    Logger.error(err, 'Error');
+    cb(err);
+  }
+
+  cb(null, lookupResults);
 }
 
-function getSummaryTags(instance){
+function getSummaryTags(instance) {
   const tags = [];
+  if (instance.hostname) {
+    tags.push(instance.hostname);
+  }
   tags.push(`Name: ${instance.name}`);
-  for(let key of Object.keys(instance.labels)){
+  for (let key of Object.keys(instance.labels)) {
     tags.push(`${key}: ${instance.labels[key]}`);
   }
   return tags;
@@ -68,7 +72,7 @@ async function getInstance(instanceId, zone) {
     instance: instanceId,
     zone
   });
-  Logger.trace({ instance },  'getInstance Result');
+  Logger.trace({ instance }, 'getInstance Result');
   return instance.data;
 }
 
@@ -152,23 +156,29 @@ function errorToPojo(err) {
   return err;
 }
 
-/**
- * The aggregatedList method searches across all regions.  We need to iterate through each region
- * to check if there are any discovered assets that match our search
- * @param results
- * @private
- */
-function _processResults(results) {
-  const instances = [];
-  if (results.data && results.data.items) {
-    for (let key of Object.keys(results.data.items)) {
-      const region = results.data.items[key];
-      if (region.instances) {
-        instances.push(...region.instances);
-      }
-    }
+function scheduleUpdate(options) {
+  if (previousUpdateCron !== options.updateCron && updateListJob !== null) {
+    // User switched from auto updating to turning it off so we need
+    // to cancel the `updateListJob` if it has been set
+    Logger.info(`Updating instance cache cron job to ${options.updateCron}`);
+    updateListJob.cancel();
+    updateListJob = null;
   }
-  return instances;
+
+  if (updateListJob === null) {
+    Logger.info(`Enabled auto update to run ${options.updateCron}`);
+    updateListJob = schedule.scheduleJob(options.updateCron, async () => {
+      Logger.info('Running automatic updating of Google Compute Engine instance list');
+      try {
+        await fetchAllInstances();
+      } catch (err) {
+        Logger.error({ error: errorToPojo(err) }, 'Error initializing ip cache');
+      }
+      Logger.info(`Auto Update Finished: Loaded ${ipLookup.size} IP addresses`);
+    });
+  }
+
+  previousUpdateCron = options.updateCron;
 }
 
 function startup(logger) {

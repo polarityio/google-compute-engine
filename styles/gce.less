@@ -1,33 +1,10 @@
-.thumbnail-container {
-  display: flex;
-  max-height: 200px;
-  flex-wrap: wrap;
-  overflow-y: scroll;
-  gap: 10px;
-  position: relative;
+.section {
+  border-left: 1px solid #eee;
+  padding-left: 5px;
+  margin-bottom: 10px;
+  margin-left: 5px;
 }
 
-.thumbnail-wrapper {
-  flex: 1;
-  min-width: 100px;
-
-  .thumbnail-image {
-    width: 100%;
-    height: auto;
-
-    &:hover {
-      outline: 2px solid #fff;
-      outline-offset: -2px;
-    }
-  }
-}
-
-.thumbnail-description {
-  position: sticky;
-  background-color: rgba(1, 1, 1, 0.8);
-  color: white;
-  bottom: 0;
-  width: 100%;
-  padding: 10px;
-  pointer-events: none;
+.section:last-child {
+  margin-bottom: 0px;
 }

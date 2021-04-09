@@ -4,6 +4,10 @@
   <span class="p-value">{{details.name}}</span>
 </div>
 <div>
+  <span class="p-key">Hostname:</span>
+  <span class="p-value">{{details.hostname}}</span>
+</div>
+<div>
   <span class="p-key">Created:</span>
   <span class="p-value">{{details.creationTimestamp}}</span>
 </div>
@@ -42,32 +46,40 @@
   <h1 class="p-title">{{fa-icon icon="network-wired" fixedWidth=true}} Network Interfaces</h1>
 {{/if}}
 {{#each details.networkInterfaces as |network|}}
-  <div>
-    <span class="p-key">Network IP:</span>
-    <span class="p-value">{{network.networkIP}}</span>
-  </div>
-  <div>
-    <span class="p-key">Name:</span>
-    <span class="p-value">{{network.name}}</span>
-  </div>
-  {{#each network.accessConfigs as |config|}}
+  <div class="section">
     <div>
-      <span class="p-key">Type:</span>
-      <span class="p-value">{{config.type}}</span>
+      <span class="p-key">Network IP:</span>
+      <span class="p-value">{{network.networkIP}}</span>
     </div>
     <div>
-      <span class="p-key">name:</span>
-      <span class="p-value">{{config.name}}</span>
+      <span class="p-key">Name:</span>
+      <span class="p-value">{{network.name}}</span>
     </div>
-    <div>
-      <span class="p-key">NAT IP:</span>
-      <span class="p-value">{{config.natIP}}</span>
-    </div>
-    <div>
-      <span class="p-key">Network Tier:</span>
-      <span class="p-value">{{config.networkTier}}</span>
-    </div>
+    {{#if (gt network.accessConfigs.length 0)}}
+      <h1 class="p-title">Access Configs</h1>
+    {{/if}}
+    {{#each network.accessConfigs as |config|}}
+      <div class="section">
+
+        <div>
+          <span class="p-key">Type:</span>
+          <span class="p-value">{{config.type}}</span>
+        </div>
+        <div>
+          <span class="p-key">name:</span>
+          <span class="p-value">{{config.name}}</span>
+        </div>
+        <div>
+          <span class="p-key">NAT IP:</span>
+          <span class="p-value">{{config.natIP}}</span>
+        </div>
+        <div>
+          <span class="p-key">Network Tier:</span>
+          <span class="p-value">{{config.networkTier}}</span>
+        </div>
+      </div>
   {{/each}}
+  </div>
 {{/each}}
 
 
@@ -77,24 +89,26 @@
   <h1 class="p-title">{{fa-icon icon="hdd" fixedWidth=true}} Disks</h1>
 {{/if}}
 {{#each details.disks as | disk |}}
-  <div>
-    <span class="p-key">Type:</span>
-    <span class="p-value">{{disk.type}}</span>
-  </div>
-  <div>
-    <span class="p-key">Mode:</span>
-    <span class="p-value">{{disk.mode}}</span>
-  </div>
-  <div>
-    <span class="p-key">Boot:</span>
-    <span class="p-value">{{disk.boot}}</span>
-  </div>
-  <div>
-    <span class="p-key">Interface:</span>
-    <span class="p-value">{{disk.interface}}</span>
-  </div>
-  <div>
-    <span class="p-key">Disk Size:</span>
-    <span class="p-value">{{disk.diskSizeGb}} Gb</span>
+  <div class="section">
+    <div>
+      <span class="p-key">Type:</span>
+      <span class="p-value">{{disk.type}}</span>
+    </div>
+    <div>
+      <span class="p-key">Mode:</span>
+      <span class="p-value">{{disk.mode}}</span>
+    </div>
+    <div>
+      <span class="p-key">Boot:</span>
+      <span class="p-value">{{disk.boot}}</span>
+    </div>
+    <div>
+      <span class="p-key">Interface:</span>
+      <span class="p-value">{{disk.interface}}</span>
+    </div>
+    <div>
+      <span class="p-key">Disk Size:</span>
+      <span class="p-value">{{disk.diskSizeGb}} Gb</span>
+    </div>
   </div>
 {{/each}}

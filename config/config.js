@@ -23,13 +23,13 @@ module.exports = {
    * @optional
    */
   description: 'Search and watch videos from Youtube',
-  entityTypes: ['IPv4', 'domain'],
-  customTypes: [
-    {
-      key: 'internalDomain',
-      regex: /[\s\S]+\.internal/
-    }
-  ],
+  entityTypes: ['IPv4'],
+  // customTypes: [
+  //   {
+  //     key: 'internalDomain',
+  //     regex: /[\s\S]+\.internal/
+  //   }
+  // ],
   defaultColor: 'light-gray',
   onDemandOnly: false,
   /**
@@ -81,5 +81,15 @@ module.exports = {
   logging: {
     level: 'trace' //trace, debug, info, warn, error, fatal
   },
-  options: []
+  options: [
+    {
+      key: 'updateCron',
+      name: 'Instance Cache Update Cron',
+      description: 'A cron schedule string which is used to determine how often to update the in-memory GCE instance cache.  The default value is "0 0 * * *" which runs once a day at midnight.  This option must be set to "Only Admins can View and Edit".',
+      default: '0 0 * * *',
+      type: 'text',
+      userCanEdit: false,
+      adminOnly: true
+    }
+  ]
 };
