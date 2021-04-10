@@ -6,6 +6,9 @@
   "dependencies": {
     "async": "^3.2.0",
     "googleapis": "^70.0.0",
-    "node-schedule": "^2.0.0"
+    "node-schedule": "^2.0.0",
+    "xbytes": "^1.6.2",
+    "cron-parser": "^3.3.0",
+    "statman-stopwatch": "^2.12.0"
   }
 }

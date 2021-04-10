@@ -2,7 +2,10 @@
 
 const { google } = require('googleapis');
 const schedule = require('node-schedule');
+const cronParser = require('cron-parser');
 const async = require('async');
+const xbytes = require('xbytes');
+const Stopwatch = require('statman-stopwatch');
 const config = require('./config/config');
 const privateKey = require(config.auth.key);
 const GCE_SCOPES = [
@@ -11,7 +14,9 @@ const GCE_SCOPES = [
   'https://www.googleapis.com/auth/compute.readonly'
 ];
 
+const stopwatch = new Stopwatch();
 const ipLookup = new Map();
+const hostLookup = new Map();
 let jwtClient;
 let Logger;
 let updateListJob = null;
@@ -26,34 +31,46 @@ let previousUpdateCron = '';
 async function doLookup(entities, options, cb) {
   Logger.debug({ entities: entities }, 'doLookup');
   let lookupResults = [];
+  let lookupErr = null;
+
   scheduleUpdate(options);
-  // check if IP exists in ipLookup cache
+
   try {
     await async.each(entities, async (entity) => {
-      if (ipLookup.has(entity.value)) {
+      let instance;
+      if (entity.isIP && ipLookup.has(entity.value)) {
         const { instanceId, zone } = ipLookup.get(entity.value);
-        const instance = await getInstance(instanceId, zone);
+        instance = await getInstance(instanceId, zone);
+      } else if ((entity.isDomain || entity.type === 'custom') && hostLookup.has(entity.value)) {
+        const { instanceId, zone } = hostLookup.get(entity.value);
+        instance = await getInstance(instanceId, zone);
+      }
+      if (instance) {
         lookupResults.push({
-          entity: entity,
+          entity,
           data: {
-            summary: getSummaryTags(instance),
+            summary: getSummaryTags(entity, instance),
             details: instance
           }
+        });
+      } else {
+        lookupResults.push({
+          entity,
+          data: null
         });
       }
     });
   } catch (err) {
-    err = errorToPojo(err);
-    Logger.error(err, 'Error');
-    cb(err);
+    lookupErr = errorToPojo(err);
+    Logger.error(lookupErr, 'Error');
+  } finally {
+    cb(lookupErr, lookupResults);
   }
-
-  cb(null, lookupResults);
 }
 
-function getSummaryTags(instance) {
+function getSummaryTags(entity, instance) {
   const tags = [];
-  if (instance.hostname) {
+  if (instance.hostname && instance.hostname !== entity.value) {
     tags.push(instance.hostname);
   }
   tags.push(`Name: ${instance.name}`);
@@ -92,6 +109,61 @@ function getZoneFromZoneUrl(zoneUrl) {
   return tokens[tokens.length - 1];
 }
 
+/**
+ * <INSTANCE_NAME>.<ZONE>.c.<PROJECT_ID>.internal
+ * @param instanceName
+ * @param zone
+ * @returns {string}
+ */
+function getZonalDns(instanceName, zone) {
+  return `${instanceName}.${zone}.c.${privateKey.project_id}.internal`;
+}
+
+// /**
+//  * <INSTANCE_NAME>.c.<PROJECT_ID>.internal
+//  * @param instanceName
+//  * @returns {string}
+//  */
+// function getGlobalDns(instanceName) {
+//   return `${instanceName}.c.${privateKey.project_id}.internal`;
+// }
+
+function cacheNetworks(instanceId, networks, zone) {
+  if (Array.isArray(networks)) {
+    networks.forEach((network) => {
+      ipLookup.set(network.networkIP, { zone, instanceId });
+      if (Array.isArray(network.accessConfigs)) {
+        network.accessConfigs.forEach((accessConfig) => {
+          ipLookup.set(accessConfig.natIP, { zone, instanceId });
+        });
+      }
+    });
+  }
+}
+
+function cacheHosts(instanceId, instanceName, hostname, zone) {
+  if (hostname) {
+    hostLookup.set(hostname, {
+      zone,
+      instanceId
+    });
+  }
+  hostLookup.set(getZonalDns(instanceName, zone), {
+    zone,
+    instanceId
+  });
+}
+
+function cacheInstance(instance) {
+  const instanceId = instance.id;
+  const networks = instance.networkInterfaces;
+  const hostname = instance.hostname;
+  const instanceName = instance.name;
+  const zone = getZoneFromZoneUrl(instance.zone);
+  cacheNetworks(instanceId, networks, zone);
+  cacheHosts(instanceId, instanceName, hostname, zone);
+}
+
 async function cachePagedInstances(compute, nextPageToken) {
   const result = await compute.instances.aggregatedList({
     project: privateKey.project_id,
@@ -103,23 +175,7 @@ async function cachePagedInstances(compute, nextPageToken) {
       const region = result.data.items[key];
       if (Array.isArray(region.instances)) {
         region.instances.forEach((instance) => {
-          const networks = instance.networkInterfaces;
-          if (Array.isArray(networks)) {
-            networks.forEach((network) => {
-              ipLookup.set(network.networkIP, {
-                zone: getZoneFromZoneUrl(instance.zone),
-                instanceId: instance.id
-              });
-              if (Array.isArray(network.accessConfigs)) {
-                network.accessConfigs.forEach((accessConfig) => {
-                  ipLookup.set(accessConfig.natIP, {
-                    zone: getZoneFromZoneUrl(instance.zone),
-                    instanceId: instance.id
-                  });
-                });
-              }
-            });
-          }
+          cacheInstance(instance);
         });
       }
     }
@@ -132,13 +188,19 @@ async function cachePagedInstances(compute, nextPageToken) {
 }
 
 async function fetchAllInstances() {
+  stopwatch.start();
+  Logger.info('Running automatic updating of Google Compute Engine instance list');
   ipLookup.clear();
+  hostLookup.clear();
   const compute = google.compute({ version: 'v1', auth: jwtClient });
   let nextPageToken = null;
   do {
     nextPageToken = await cachePagedInstances(compute, nextPageToken);
   } while (nextPageToken !== null);
-  Logger.info({ numIps: ipLookup.size }, 'Initialized Instance Cache');
+  Logger.info(
+    { numIps: ipLookup.size, numHosts: hostLookup.size, usedMemory: getMemoryUsage(), elapsedTime: stopwatch.read() },
+    'Finished initializing Instance Cache'
+  );
 }
 
 function errorToPojo(err) {
@@ -156,6 +218,15 @@ function errorToPojo(err) {
   return err;
 }
 
+function getMemoryUsage() {
+  const usedMemory = process.memoryUsage();
+  const converted = {};
+  for (let key in usedMemory) {
+    converted[key] = xbytes(usedMemory[key]);
+  }
+  return converted;
+}
+
 function scheduleUpdate(options) {
   if (previousUpdateCron !== options.updateCron && updateListJob !== null) {
     // User switched from auto updating to turning it off so we need
@@ -168,13 +239,11 @@ function scheduleUpdate(options) {
   if (updateListJob === null) {
     Logger.info(`Enabled auto update to run ${options.updateCron}`);
     updateListJob = schedule.scheduleJob(options.updateCron, async () => {
-      Logger.info('Running automatic updating of Google Compute Engine instance list');
       try {
         await fetchAllInstances();
       } catch (err) {
         Logger.error({ error: errorToPojo(err) }, 'Error initializing ip cache');
       }
-      Logger.info(`Auto Update Finished: Loaded ${ipLookup.size} IP addresses`);
     });
   }
 
@@ -184,20 +253,47 @@ function scheduleUpdate(options) {
 function startup(logger) {
   return async function (cb) {
     Logger = logger;
+    let errPojo = null;
 
     // configure a JWT auth client
     jwtClient = new google.auth.JWT(privateKey.client_email, null, privateKey.private_key, GCE_SCOPES);
     try {
       await fetchAllInstances();
     } catch (err) {
-      Logger.error({ error: errorToPojo(err) }, 'Error initializing ip cache');
+      errPojo = errorToPojo(err);
+      Logger.error({ errPojo }, 'Error initializing ip cache');
+    } finally {
+      cb(errPojo);
     }
-
-    cb(null);
   };
+}
+
+function validateOptions(userOptions, cb) {
+  const errors = [];
+  if (
+    typeof userOptions.updateCron.value !== 'string' ||
+    (typeof userOptions.updateCron.value === 'string' && userOptions.updateCron.value.length === 0)
+  ) {
+    errors.push({
+      key: 'updateCron',
+      message: 'You must provide a valid cron expression'
+    });
+  } else {
+    try {
+      cronParser.parseExpression(userOptions.updateCron.value);
+    } catch (error) {
+      errors.push({
+        key: 'updateCron',
+        message: 'You must provide a valid cron expression'
+      });
+    }
+  }
+
+  cb(null, errors);
 }
 
 module.exports = {
   doLookup: doLookup,
-  startup: startup
+  startup: startup,
+  validateOptions
 };

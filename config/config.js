@@ -23,13 +23,24 @@ module.exports = {
    * @optional
    */
   description: 'Search and watch videos from Youtube',
-  entityTypes: ['IPv4'],
-  // customTypes: [
-  //   {
-  //     key: 'internalDomain',
-  //     regex: /[\s\S]+\.internal/
-  //   }
-  // ],
+  entityTypes: ['IPv4', 'domain'],
+  /**
+   * Custom types for default zonal and global dns names of VM instances
+   * Regexes are based off formats provided: https://cloud.google.com/compute/docs/internal-dns#about_internal_dns
+   * Regex rules for instance name taken from here: https://cloud.google.com/compute/docs/naming-resources
+   */
+  customTypes: [
+    {
+      key: 'zonalDns',
+      //<INSTANCE_NAME>.<ZONE>.c.<PROJECT_ID>.internal
+      regex: /[a-z]([-a-z0-9]*[a-z0-9])?\.[a-z]([-a-z0-9]*[a-z0-9])?\.c\.[a-z]([-a-z0-9]*[a-z0-9])?\.internal/
+    }
+    // {
+    //   key: 'globalDns',
+    //   //<INSTANCE_NAME>.c.<PROJECT_ID>.internal
+    //   regex: /[a-z]([-a-z0-9]*[a-z0-9])?\.c\.[a-z]([-a-z0-9]*[a-z0-9])?\.internal/
+    // }
+  ],
   defaultColor: 'light-gray',
   onDemandOnly: false,
   /**
@@ -85,7 +96,8 @@ module.exports = {
     {
       key: 'updateCron',
       name: 'Instance Cache Update Cron',
-      description: 'A cron schedule string which is used to determine how often to update the in-memory GCE instance cache.  The default value is "0 0 * * *" which runs once a day at midnight.  This option must be set to "Only Admins can View and Edit".',
+      description:
+        'A cron schedule string which is used to determine how often to update the in-memory GCE instance cache.  The default value is "0 0 * * *" which runs once a day at midnight.  Currently, W (nearest weekday) and L (last day of month/week) are not supported. This option must be set to "Only Admins can View and Edit".',
       default: '0 0 * * *',
       type: 'text',
       userCanEdit: false,
