@@ -2,7 +2,7 @@
 
 ![image](https://img.shields.io/badge/status-beta-green.svg)
 
-Polarity's Google Compute Engine integration gives users the ability to lookup IP addresses for VM instances in your Google Compute Engine infrastructure.  The integration supports both internal and external IP lookups.
+Polarity's Google Compute Engine integration gives users the ability to lookup IP addresses and hostnames for VM instances in your Google Compute Engine infrastructure.  The integration supports both internal and external IP lookups, and internal and custom hostnames.  Internal hostnames must end in `.internal` and custom hostnames must end in a public suffix to be recognized.  
 
 | ![image](./images/overlay-ip.png) | ![image](./images/overlay-host.png) |
 |---|---|
