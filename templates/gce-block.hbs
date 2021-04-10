@@ -42,7 +42,6 @@
   </div>
 {{/each-in}}
 
-
 {{!-- Network Interfaces --}}
 {{#if (gt details.disks.length 0)}}
   <h1 class="p-title">{{fa-icon icon="network-wired" fixedWidth=true}} Network Interfaces</h1>
@@ -84,7 +83,13 @@
   </div>
 {{/each}}
 
-
+{{!-- Tags --}}
+{{#if (gt details.tags.items.length 0)}}
+  <h1 class="p-title">{{fa-icon icon="tags" fixedWidth=true}} Tags</h1>
+  {{#each details.tags.items as |tag|}}
+    <span class="p-tag">{{tag}}</span>
+  {{/each}}
+{{/if}}
 
 {{!-- Disks --}}
 {{#if (gt details.disks.length 0)}}
