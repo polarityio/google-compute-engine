@@ -10,7 +10,7 @@ Polarity's Google Compute Engine integration gives users the ability to lookup I
 
 ## How does it work?
 
-The integration uses the Google Compute Engine REST API to fetch instance information for the specified project.  In order to provide fast lookups on external and internal IP addresses associated with VM Instances as well as both ZonalDNS and custom hostnames, the integration will cache IP address, hostname, and zone information in memory when it first starts.  This works by fetching 500 instances at a time from the Google Compute Engine REST API and building an in-memory map of the data which maps IP and hostname to an instance ID and zone.  When a lookup request is sent for an IP address or host, the in-memory map is checked for a hit before the full instance details are retrieved.
+The integration uses the Google Compute Engine REST API to fetch instance information for the specified project.  In order to provide fast lookups on external and internal IP addresses associated with VM Instances as well as both ZonalDNS and custom hostnames, the integration will cache IP address, hostname, and zone information in memory when it first starts.  This works by fetching 500 instances at a time from the Google Compute Engine REST API and building an in-memory map of the data which maps IP and hostname to an instance ID and zone.  When a lookup request is sent for an IP address or host, the in-memory map is checked for a hit before the full instance details are retrieved through a REST API request.
 
 By default, the integration will refresh the in-memory cache when it is restarted and then once every 24 hours at midnight.  You can adjust this refresh interval by providing your own CRON tab string via the "Instance Cache Update Cron" option.
 
