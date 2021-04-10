@@ -4,6 +4,10 @@
 
 Polarity's Google Compute Engine integration gives users the ability to lookup IP addresses for VM instances in your Google Compute Engine infrastructure.  The integration supports both internal and external IP lookups.
 
+| ![image](./images/overlay-ip.png) | ![image](./images/overlay-host.png) |
+|---|---|
+|*IP Lookup of VM Instance* | *Internal Hostname Lookup of VM Instance*|
+
 ## How does it work?
 
 The integration uses the Google Compute Engine REST API to fetch instance information for the specified project.  In order to provide fast lookups on external and internal IP addresses associated with VM Instances as well as both ZonalDNS and custom hostnames, the integration will cache IP address, hostname, and zone information in memory when it first starts.  This works by fetching 500 instances at a time from the Google Compute Engine REST API and building an in-memory map of the data which maps IP and hostname to an instance ID and zone.  When a lookup request is sent for an IP address or host, the in-memory map is checked for a hit before the full instance details are retrieved.
