@@ -74,9 +74,12 @@ function getSummaryTags(entity, instance) {
     tags.push(instance.hostname);
   }
   tags.push(`Name: ${instance.name}`);
-  for (let key of Object.keys(instance.labels)) {
-    tags.push(`${key}: ${instance.labels[key]}`);
+  if (instance.labels) {
+    for (let key of Object.keys(instance.labels)) {
+      tags.push(`${key}: ${instance.labels[key]}`);
+    }
   }
+
   return tags;
 }
 
