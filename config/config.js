@@ -22,7 +22,7 @@ module.exports = {
    * @type String
    * @optional
    */
-  description: 'Search and watch videos from Youtube',
+  description: 'Access GCE VM instance metadata such as names, dates, operational status, zones, machine types, labels, networking interfaces, and disks.',
   entityTypes: ['IPv4', 'domain'],
   /**
    * Custom types for default zonal and global dns names of VM instances
