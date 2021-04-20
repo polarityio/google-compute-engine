@@ -45,13 +45,13 @@ You will need to configure a Google service account key and perform the followin
 
 Before you can use the Polarity Google Compute Engine Integration you will need to go to the [Google Developers Console](https://console.developers.google.com/) and create a new project. Provide a name for your project and an ID, which can be generated as well.
 
-After the project has been created, from the left menu, select `Credentials`, then `Create credentials`. Select `Service account key` from the type of credentials list. After this, choose `New service account` from the dropdown and name the service account `polarity-google-compute-engine`.  Under the role selection, choose `Service Accounts -> Service Account User`.  
+After the project has been created, from the left menu, select `Credentials`, then `Create credentials`, then `Service account`.  Fill in the service account name (e.g., `polarity-google-compute-engine`) an optional description and then click on the "CREATE" button.
 
 ![image](images/1_create_service_account.png)
 
 ### Create JSON Key
 
-After the service account is created you will need to navigate to the service and click on the `KEYS` tab.  
+After the service account is created you will need to navigate to the service account and click on the `KEYS` tab.  
 
 ![image](images/2_create_key.png)
 
