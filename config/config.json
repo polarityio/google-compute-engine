@@ -1,0 +1,53 @@
+{
+  "name": "Google Compute Engine",
+  "acronym": "GCE",
+  "description": "Access GCE VM instance metadata such as names, dates, operational status, zones, machine types, labels, networking interfaces, and disks.",
+  "entityTypes": [
+    "IPv4",
+    "domain"
+  ],
+  "customTypes": [
+    {
+      "key": "zonalDns",
+      "regex": "[a-z]([-a-z0-9]*[a-z0-9])?\\.[a-z]([-a-z0-9]*[a-z0-9])?\\.c\\.[a-z]([-a-z0-9]*[a-z0-9])?\\.internal"
+    }
+  ],
+  "defaultColor": "light-gray",
+  "onDemandOnly": false,
+  "styles": [
+    "./styles/gce.less"
+  ],
+  "block": {
+    "component": {
+      "file": "./components/gce-block.js"
+    },
+    "template": {
+      "file": "./templates/gce-block.hbs"
+    }
+  },
+  "auth": {
+    "key": "./key/google-compute-engine_privatekey.json"
+  },
+  "request": {
+    "cert": "",
+    "key": "",
+    "passphrase": "",
+    "ca": "",
+    "proxy": "",
+    "rejectUnauthorized": true
+  },
+  "logging": {
+    "level": "info"
+  },
+  "options": [
+    {
+      "key": "updateCron",
+      "name": "Instance Cache Update Cron",
+      "description": "A cron schedule string which is used to determine how often to update the in-memory GCE instance cache.  The default value is \"0 0 * * *\" which runs once a day at midnight.  Currently, W (nearest weekday) and L (last day of month/week) are not supported. This option must be set to \"Only Admins can View and Edit\".",
+      "default": "0 0 * * *",
+      "type": "text",
+      "userCanEdit": false,
+      "adminOnly": true
+    }
+  ]
+}
