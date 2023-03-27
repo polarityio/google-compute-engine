@@ -1,4 +1,5 @@
 {
+  "polarityIntegrationUuid": "ef3d8e10-cce1-11ed-aeee-075d3490155d",
   "name": "Google Compute Engine",
   "acronym": "GCE",
   "description": "Access GCE VM instance metadata such as names, dates, operational status, zones, machine types, labels, networking interfaces, and disks.",
